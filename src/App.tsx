@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
 import React, { useEffect, useRef, useState } from 'react';
-import * as todoService from './api/todos';
+import { getTodos, deleteTodo, createTodo, updateTodo } from './api/todos';
 import { Todo } from './types/Todo';
 import { TodoRow } from './components/toDoRow';
 import { Header } from './components/Header';
@@ -9,6 +9,7 @@ import { Header } from './components/Header';
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
 
   const errorTimerId = useRef(0);
 
@@ -21,8 +22,13 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    todoService
-      .getTodos()
+    return () => {
+      window.clearTimeout(errorTimerId.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    getTodos()
       .then(setTodos)
       .catch(() => showErorr('Unable to load todos'));
   }, []);
@@ -34,23 +40,35 @@ export const App: React.FC = () => {
       return;
     }
 
-    return todoService
-      .createTodo(title)
+    if (tempTodo !== null) {
+      return;
+    }
+
+    setTempTodo({
+      id: 0,
+      completed: false,
+      title,
+      userId: 11,
+    });
+
+    createTodo(title)
       .then(todo => {
         setTodos(currentTodos => [...currentTodos, todo]);
       })
       .catch(error => {
         showErorr('Unable to create a todo');
         throw error;
+      })
+      .finally(() => {
+        setTempTodo(null);
       });
   };
 
   const toggleTodo = (todoToUpdate: Todo) => {
-    return todoService
-      .updateTodo({
-        ...todoToUpdate,
-        completed: !todoToUpdate.completed,
-      })
+    updateTodo({
+      ...todoToUpdate,
+      completed: !todoToUpdate.completed,
+    })
       .then(updatedTodo => {
         setTodos(currentTodos =>
           currentTodos.map(todo =>
@@ -64,15 +82,23 @@ export const App: React.FC = () => {
       });
   };
 
+  const toggleAllTodos = () => {};
+
+  let todoToShow = todos;
+
+  if (tempTodo != null) {
+    todoToShow = [...todos, tempTodo];
+  }
+
   return (
     <div className="todoapp">
       <h1 className="todoapp__title">todos</h1>
 
       <div className="todoapp__content">
-        <Header onAdd={addTodo} toggleAllTodos={toggleTodos} />
+        <Header onAdd={addTodo} toggleAllTodos={toggleAllTodos} />
 
         <section className="todoapp__main" data-cy="TodoList">
-          {todos.map((todo: Todo) => (
+          {todoToShow.map((todo: Todo) => (
             <TodoRow
               todo={todo}
               onDelete={() => deleteTodo(todo.id)}

@@ -15,6 +15,8 @@ export const TodoRow: React.FC<Props> = ({
   onRename,
   onToggle,
 }: Props) => {
+  const [editing, setEditing] = useState<boolean>(false);
+  const [title, setTitle] = useState<string>(todo.title);
   const [loading, setLoading] = useState(false);
 
   const handleToggleTodo = async () => {
@@ -59,7 +61,7 @@ export const TodoRow: React.FC<Props> = ({
       data-cy="Todo"
       className={classNames('todo', { completed: todo.completed })}
     >
-      <label className="todo__status-label">
+      <label className="todo__status-label" aria-labelledby="todo-checkbox">
         <input
           data-cy="TodoStatus"
           type="checkbox"
@@ -83,7 +85,9 @@ export const TodoRow: React.FC<Props> = ({
 
       <div
         data-cy="TodoLoader"
-        className={classNames('modal overlay', { 'is-active': loading })}
+        className={classNames('modal overlay', {
+          'is-active': loading || todo.id === 0,
+        })}
       >
         <div className="modal-background has-background-white-ter" />
         <div className="loader" />
